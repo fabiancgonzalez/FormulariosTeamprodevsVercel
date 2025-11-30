@@ -1,0 +1,11 @@
+<div class="main-container">
+  <div class="button-container">
+    <button (click)="mostrarPersona()" class="btn-primary">Cargar Persona</button>
+    <button (click)="mostrarMascota()" class="btn-primary">Cargar Mascota</button>
+  </div>
+
+  <div class="form-container">
+    <app-formulariopersona *ngIf="mostrarFormularioPersona()"></app-formulariopersona>
+    <app-formulariomascota *ngIf="mostrarFormularioMascota()"></app-formulariomascota>
+  </div>
+</div>

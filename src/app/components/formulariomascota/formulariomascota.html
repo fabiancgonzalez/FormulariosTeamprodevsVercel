@@ -1,0 +1,78 @@
+<div class="contenedor_formulario">
+  <h2>Formulario de Mascota</h2>
+  
+  <div *ngIf="error()" class="alert alert-error">
+    {{ error() }}
+  </div>
+  
+  <div *ngIf="mensajeGuardado()" class="alert alert-success">
+    {{ mensajeGuardado() }}
+  </div>
+
+  <div class="mascotas-list" *ngIf="mascotas().length > 0">
+    <h3>Mascotas Registradas</h3>
+    <div class="mascota-item" *ngFor="let mascota of mascotas()">
+      <span>{{ mascota.nombre }} ({{ mascota.tipo }})</span>
+      <button mat-raised-button color="primary" (click)="seleccionarMascota(mascota)">Editar</button>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>{{ modoEdicion() ? 'Editar Mascota' : 'Nueva Mascota' }}</h3>
+
+    <p>Persona *</p>
+    <mat-form-field>
+      <mat-label>Selecciona una persona:</mat-label>
+      <mat-select [(ngModel)]="idPersona" [compareWith]="compareFn">
+        <mat-option *ngFor="let persona of personas()" [value]="persona.id">
+          {{ persona.nombre }} {{ persona.apellido }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <p>Nombre de la mascota *</p>
+    <mat-form-field>
+      <mat-label>Ingrese el nombre:</mat-label>
+      <input matInput [(ngModel)]="nombre" placeholder="nombre">
+    </mat-form-field>
+
+    <p>Especie *</p>
+    <mat-form-field>
+      <mat-label>Ingrese la especie:</mat-label>
+      <input matInput [(ngModel)]="especie" placeholder="perro, gato, etc.">
+    </mat-form-field>
+
+    <p>Raza</p>
+    <mat-form-field>
+      <mat-label>Ingrese la raza:</mat-label>
+      <input matInput [(ngModel)]="raza" placeholder="raza">
+    </mat-form-field>
+
+    <p>Color</p>
+    <mat-form-field>
+      <mat-label>Ingrese el color:</mat-label>
+      <input matInput [(ngModel)]="color" placeholder="color">
+    </mat-form-field>
+
+    <p>Edad</p>
+    <mat-form-field>
+      <mat-label>Ingrese la edad:</mat-label>
+      <input matInput [(ngModel)]="edad" type="number" placeholder="años">
+    </mat-form-field>
+
+    <div class="button-row">
+      <button matButton [disabled]="cargando()" (click)="guardarMascota()" class="btn-guardar" *ngIf="!modoEdicion()">
+        {{ cargando() ? 'Guardando...' : 'Guardar' }}
+      </button>
+      <button matButton [disabled]="cargando()" (click)="actualizarMascota()" class="btn-actualizar" *ngIf="modoEdicion()">
+        {{ cargando() ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+      <button matButton [disabled]="cargando()" (click)="eliminarMascota()" class="btn-eliminar" *ngIf="modoEdicion()">
+        {{ cargando() ? 'Eliminando...' : 'Eliminar' }}
+      </button>
+      <button matButton (click)="limpiarFormulario()" class="btn-cancelar" *ngIf="modoEdicion()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>

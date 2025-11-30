@@ -1,0 +1,52 @@
+<div class="reporte-container">
+  <h2>Reporte de Personas con Mascotas</h2>
+
+  <div *ngIf="error()" class="alert alert-error">
+    {{ error() }}
+  </div>
+
+  <div class="filtro-container">
+    <mat-form-field appearance="outline">
+      <mat-label>Buscar por nombre</mat-label>
+      <input matInput [(ngModel)]="filtroNombre" (ngModelChange)="filtrarPorNombre()" placeholder="Ingrese nombre o apellido">
+    </mat-form-field>
+  </div>
+
+  <div *ngIf="cargando()" class="loading">
+    <p>Cargando datos...</p>
+  </div>
+
+  <div *ngIf="!cargando() && personasFiltradas().length === 0" class="no-data">
+    <p>No se encontraron resultados</p>
+  </div>
+
+  <div *ngIf="!cargando() && personasFiltradas().length > 0" class="personas-list">
+    <mat-card *ngFor="let persona of personasFiltradas()" class="persona-card">
+      <mat-card-header>
+        <mat-card-title>{{ persona.nombre }} {{ persona.apellido }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="persona-info">
+          <p><strong>Email:</strong> {{ persona.email || 'N/A' }}</p>
+          <p><strong>Teléfono:</strong> {{ persona.telefono || 'N/A' }}</p>
+        </div>
+        
+        <div class="mascotas-section">
+          <h3>Mascotas ({{ persona.mascotas.length }})</h3>
+          <div *ngIf="persona.mascotas.length === 0" class="no-mascotas">
+            <p>Esta persona no tiene mascotas registradas</p>
+          </div>
+          <div *ngIf="persona.mascotas.length > 0" class="mascotas-list">
+            <div *ngFor="let mascota of persona.mascotas" class="mascota-item">
+              <p><strong>{{ mascota.nombre }}</strong></p>
+              <p>Tipo: {{ mascota.tipo }}</p>
+              <p *ngIf="mascota.raza">Raza: {{ mascota.raza }}</p>
+              <p *ngIf="mascota.color">Color: {{ mascota.color }}</p>
+              <p *ngIf="mascota.edad">Edad: {{ mascota.edad }} años</p>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
