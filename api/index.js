@@ -1,41 +1,16 @@
 require('dotenv').config();
 const express = require('express');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const { MongoClient, ServerApiVersion } = require('mongodb');
-
-const app = express();
-
-// Configuración de MongoDB
-const mongoUri = process.env.DATABASE_URL || 'mongodb+srv://Vercel-Admin-formulariomascota:Fabian04533309@formulariomascota.tqebomv.mongodb.net/?retryWrites=true&w=majority';
-const mongoClient = new MongoClient(mongoUri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
-
-let db = null;
-
-// Conectar a MongoDB al iniciar
-async function connectMongo() {
-  try {
-    await mongoClient.connect();
-    db = mongoClient.db('formulariomascotas');
-    console.log('[MONGO] ✓ Conectado a MongoDB Atlas');
-    return true;
-  } catch (error) {
-    console.error('[MONGO] ✗ Error conectando:', error.message);
-    throw error;
-  }
-}
 
 // Importar rutas
 const personasRoutes = require('../backend-nodejs/routes/personas');
 const mascotasRoutes = require('../backend-nodejs/routes/mascotas');
 
-// Middleware
+const app = express();
+
+// Middleware base
 app.use(cors({
   origin: [
     'http://localhost:4200',
@@ -48,38 +23,57 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Middleware para pasar DB a las rutas
-app.use((req, res, next) => {
-  if (!db) {
-    console.error('[ERROR] DB no está disponible');
-    return res.status(503).json({ error: 'Servicio no disponible', details: 'Base de datos no conectada' });
+// MongoDB
+const mongoUri = process.env.DATABASE_URL || 'mongodb+srv://Vercel-Admin-formulariomascota:Fabian04533309@formulariomascota.tqebomv.mongodb.net/?retryWrites=true&w=majority';
+const mongoClient = new MongoClient(mongoUri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
   }
-  req.db = db;
-  next();
 });
 
-// Rutas
-app.use('/api/personas', personasRoutes);
-app.use('/api/mascotas', mascotasRoutes);
+let db = null;
 
-// Ruta de prueba
+// Health (antes de DB)
 app.get('/api/health', (req, res) => {
-  res.json({ message: 'Backend funcionando correctamente', status: 'ok', db: !!db });
+  res.json({ message: 'OK', db: !!db });
 });
 
-// Manejo de errores global
-app.use((err, req, res, next) => {
-  console.error('[ERROR-HANDLER]', err);
-  res.status(500).json({ 
-    error: 'Error interno del servidor', 
-    message: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
-});
+// Setup
+async function setupServer() {
+  try {
+    if (!db) {
+      console.log('[API] Conectando a MongoDB...');
+      await mongoClient.connect();
+      db = mongoClient.db('formulariomascotas');
+      console.log('[API] ✓ Conectado a MongoDB Atlas');
+    }
+    
+    // Middleware para inyectar DB
+    app.use((req, res, next) => {
+      if (!db) {
+        return res.status(500).json({ error: 'DB no disponible' });
+      }
+      req.db = db;
+      next();
+    });
+    
+    // Rutas
+    app.use('/api/personas', personasRoutes);
+    app.use('/api/mascotas', mascotasRoutes);
+    
+    // Error handler
+    app.use((err, req, res, next) => {
+      console.error('[API-ERROR]', err.message);
+      res.status(500).json({ error: err.message });
+    });
+    
+  } catch (error) {
+    console.error('[API] Error:', error.message);
+  }
+}
 
-// Iniciar conexión a MongoDB
-connectMongo().catch(err => {
-  console.error('Error crítico al conectar a MongoDB:', err);
-});
+setupServer();
 
 module.exports = app;
