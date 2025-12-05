@@ -1,0 +1,9 @@
+# MongoDB Atlas Configuration - Usando URI completa directa
+MONGO_URI=mongodb+srv://ceferinomonier:Fabian0453*@cluster0.igvuqqt.mongodb.net/?appName=Cluster0&retryWrites=true&w=majority
+
+# Server Configuration
+PORT=5001
+NODE_ENV=development
+
+# CORS Configuration
+CORS_ORIGIN=http://localhost:4200
