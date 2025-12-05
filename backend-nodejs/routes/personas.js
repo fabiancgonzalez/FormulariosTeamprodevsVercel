@@ -4,11 +4,16 @@ const router = express.Router();
 // GET - Obtener todas las personas
 router.get('/', async (req, res) => {
   try {
+    console.log('[PERSONAS] GET / - req.db:', typeof req.db);
     const db = req.db;
+    if (!db) {
+      return res.status(500).json({ error: 'DB not available in route' });
+    }
     const personas = await db.collection('personas').find({}).sort({ createdAt: -1 }).toArray();
+    console.log('[PERSONAS] ✓ Encontradas', personas.length, 'personas');
     res.json(personas);
   } catch (error) {
-    console.error('Error obteniendo personas:', error);
+    console.error('[PERSONAS] Error obteniendo personas:', error.message);
     res.status(500).json({ error: error.message });
   }
 });

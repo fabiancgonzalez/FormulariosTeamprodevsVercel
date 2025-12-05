@@ -19,24 +19,7 @@ const mongoClient = new MongoClient(mongoUri, {
 
 let db = null;
 
-// Conectar a MongoDB al iniciar
-async function connectMongo() {
-  try {
-    await mongoClient.connect();
-    db = mongoClient.db('formulariomascotas');
-    console.log('[MONGO] ✓ Conectado a MongoDB Atlas');
-    return true;
-  } catch (error) {
-    console.error('[MONGO] ✗ Error conectando:', error.message);
-    process.exit(1);
-  }
-}
-
-// Importar rutas
-const personasRoutes = require('./backend-nodejs/routes/personas');
-const mascotasRoutes = require('./backend-nodejs/routes/mascotas');
-
-// Middleware
+// Middleware base (CORS, bodyParser)
 app.use(cors({
   origin: [
     'http://localhost:4200',
@@ -49,68 +32,80 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-console.log('[SETUP] Agregando middleware de MongoDB...');
+// Health check (antes de que DB esté conectada)
+app.get('/api/health', (req, res) => {
+  res.json({ message: 'OK', db_connected: !!db });
+});
 
-// Middleware para pasar DB a las rutas
-app.use((req, res, next) => {
+// Middleware para inyectar DB (SIEMPRE se ejecuta si la ruta existe)
+const ensureDB = (req, res, next) => {
   if (!db) {
-    return res.status(500).json({ error: 'Base de datos no disponible' });
+    console.error('[MIDDLEWARE] ERROR: db no disponible');
+    return res.status(500).json({ error: 'DB not available in route' });
   }
-  console.log('[MIDDLEWARE-DB]', req.method, req.path);
+  console.log('[MIDDLEWARE] ✓ DB disponible:', !!db);
   req.db = db;
   next();
-});
+};
 
-console.log('[SETUP] Registrando rutas...');
+// Conectar a MongoDB y configurar rutas
+async function setupServer() {
+  try {
+    console.log('[MONGO] Iniciando conexión a MongoDB...');
+    await mongoClient.connect();
+    db = mongoClient.db('formulariomascotas');
+    console.log('[MONGO] ✓ Conectado a MongoDB Atlas');
+    console.log('[MONGO] Variable db es:', typeof db);
+    
+    // Importar rutas
+    const personasRoutes = require('./backend-nodejs/routes/personas');
+    const mascotasRoutes = require('./backend-nodejs/routes/mascotas');
+    
+    // Registrar middleware ANTES de las rutas
+    app.use(ensureDB);
+    
+    // Registrar rutas
+    app.use('/api/personas', personasRoutes);
+    app.use('/api/mascotas', mascotasRoutes);
+    console.log('[SETUP] ✓ Rutas registradas');
 
-// Rutas
-app.use('/api/personas', personasRoutes);
-app.use('/api/mascotas', mascotasRoutes);
+    // Manejo de errores global
+    app.use((err, req, res, next) => {
+      console.error('[ERROR]', err.message);
+      res.status(err.status || 500).json({
+        error: err.message || 'Error interno del servidor'
+      });
+    });
 
-// Ruta de prueba
-app.get('/api/health', (req, res) => {
-  res.json({ message: 'Backend funcionando correctamente', status: 'ok', timestamp: new Date() });
-});
+    // 404 handler
+    app.use((req, res) => {
+      res.status(404).json({ error: 'Ruta no encontrada' });
+    });
 
-// Manejo de errores global
-app.use((err, req, res, next) => {
-  console.error('[ERROR]', err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Error interno del servidor',
-    status: err.status || 500
-  });
-});
+    // Iniciar servidor
+    app.listen(PORT, () => {
+      console.log(`[SERVER] ✓ Servidor corriendo en http://localhost:${PORT}`);
+    });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Ruta no encontrada', path: req.path });
-});
-
-// Iniciar servidor
-async function startServer() {
-  await connectMongo();
-  
-  app.listen(PORT, () => {
-    console.log('[SERVER] DATABASE_URL:', process.env.DATABASE_URL ? 'Configurada' : 'NO configurada');
-    console.log(`[SERVER] ✓ Servidor corriendo en http://localhost:${PORT}`);
-    console.log(`[SERVER] ✓ API Health: http://localhost:${PORT}/api/health`);
-  });
+  } catch (error) {
+    console.error('[ERROR] Error crítico:', error.message);
+    process.exit(1);
+  }
 }
-
-startServer();
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  console.log('[SERVER] SIGTERM recibido, cerrando...');
-  await mongoClient.close();
+  console.log('[SERVER] SIGTERM recibido');
+  if (db) await mongoClient.close();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('[SERVER] SIGINT recibido, cerrando...');
-  await mongoClient.close();
+  console.log('[SERVER] SIGINT recibido');
+  if (db) await mongoClient.close();
   process.exit(0);
 });
 
-module.exports = app;
+// Iniciar
+setupServer();
 
