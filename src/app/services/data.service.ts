@@ -35,9 +35,17 @@ export interface Mascota {
 })
 export class DataService {
   // Backend Node.js + MongoDB Atlas
-  private apiUrl = 'http://localhost:5001/api';
+  private apiUrl: string;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    // Determinar URL según el entorno
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      this.apiUrl = 'http://localhost:5001/api';
+    } else {
+      // En producción (Vercel), usar ruta relativa /api
+      this.apiUrl = '/api';
+    }
+  }
 
   // ========== PERSONAS ==========
 
