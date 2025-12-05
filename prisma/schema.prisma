@@ -16,9 +16,7 @@ model Persona {
   apellido  String
   email     String   @unique
   telefono  String?
-  cedula    String?  @unique
-  direccion String?
-  ciudad    String?
+ 
   mascotas  Mascota[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -31,8 +29,7 @@ model Mascota {
   raza        String?
   color       String?
   edad        Int?
-  descripcion String?
-  foto        String?
+ 
   personaId   String   @db.ObjectId
   persona     Persona  @relation(fields: [personaId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())

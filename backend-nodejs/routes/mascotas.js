@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
+const { ObjectId } = require('mongodb');
 
 // GET - Obtener todas las mascotas
 router.get('/', async (req, res) => {
   try {
-    const mascotas = await req.prisma.mascota.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: { persona: true }
-    });
+    const db = req.db;
+    const mascotas = await db.collection('mascotas').find({}).sort({ createdAt: -1 }).toArray();
     res.json(mascotas);
   } catch (error) {
     console.error('Error obteniendo mascotas:', error);
@@ -18,10 +17,10 @@ router.get('/', async (req, res) => {
 // GET - Obtener mascotas por persona
 router.get('/persona/:personaId', async (req, res) => {
   try {
-    const mascotas = await req.prisma.mascota.findMany({
-      where: { personaId: req.params.personaId },
-      include: { persona: true }
-    });
+    const db = req.db;
+    const mascotas = await db.collection('mascotas')
+      .find({ personaId: req.params.personaId })
+      .toArray();
     res.json(mascotas);
   } catch (error) {
     console.error('Error obteniendo mascotas por persona:', error);
@@ -32,10 +31,8 @@ router.get('/persona/:personaId', async (req, res) => {
 // GET - Obtener una mascota por ID
 router.get('/:id', async (req, res) => {
   try {
-    const mascota = await req.prisma.mascota.findUnique({
-      where: { id: req.params.id },
-      include: { persona: true }
-    });
+    const db = req.db;
+    const mascota = await db.collection('mascotas').findOne({ _id: new ObjectId(req.params.id) });
     if (!mascota) {
       return res.status(404).json({ error: 'Mascota no encontrada' });
     }
@@ -49,28 +46,29 @@ router.get('/:id', async (req, res) => {
 // POST - Crear una nueva mascota
 router.post('/', async (req, res) => {
   try {
+    const db = req.db;
+    
     // Verificar que la persona existe
-    const persona = await req.prisma.persona.findUnique({
-      where: { id: req.body.personaId }
-    });
+    const persona = await db.collection('personas').findOne({ _id: new ObjectId(req.body.personaId) });
     if (!persona) {
       return res.status(404).json({ error: 'Persona no encontrada' });
     }
 
-    const mascota = await req.prisma.mascota.create({
-      data: {
-        nombre: req.body.nombre,
-        tipo: req.body.tipo,
-        raza: req.body.raza,
-        color: req.body.color,
-        edad: req.body.edad ? parseInt(req.body.edad) : null,
-        descripcion: req.body.descripcion,
-        foto: req.body.foto,
-        personaId: req.body.personaId
-      },
-      include: { persona: true }
-    });
-    res.status(201).json(mascota);
+    const mascota = {
+      nombre: req.body.nombre,
+      tipo: req.body.tipo,
+      raza: req.body.raza,
+      color: req.body.color,
+      edad: req.body.edad ? parseInt(req.body.edad) : null,
+      descripcion: req.body.descripcion,
+      foto: req.body.foto,
+      personaId: req.body.personaId,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    const result = await db.collection('mascotas').insertOne(mascota);
+    res.status(201).json({ ...mascota, _id: result.insertedId });
   } catch (error) {
     console.error('Error creando mascota:', error);
     res.status(400).json({ error: error.message });
@@ -80,35 +78,38 @@ router.post('/', async (req, res) => {
 // PUT - Actualizar una mascota
 router.put('/:id', async (req, res) => {
   try {
+    const db = req.db;
+    
     // Si se está actualizando personaId, verificar que existe
     if (req.body.personaId) {
-      const persona = await req.prisma.persona.findUnique({
-        where: { id: req.body.personaId }
-      });
+      const persona = await db.collection('personas').findOne({ _id: new ObjectId(req.body.personaId) });
       if (!persona) {
         return res.status(404).json({ error: 'Persona no encontrada' });
       }
     }
 
-    const mascota = await req.prisma.mascota.update({
-      where: { id: req.params.id },
-      data: {
-        nombre: req.body.nombre,
-        tipo: req.body.tipo,
-        raza: req.body.raza,
-        color: req.body.color,
-        edad: req.body.edad ? parseInt(req.body.edad) : null,
-        descripcion: req.body.descripcion,
-        foto: req.body.foto,
-        personaId: req.body.personaId
-      },
-      include: { persona: true }
-    });
+    const update = {
+      nombre: req.body.nombre,
+      tipo: req.body.tipo,
+      raza: req.body.raza,
+      color: req.body.color,
+      edad: req.body.edad ? parseInt(req.body.edad) : null,
+      descripcion: req.body.descripcion,
+      foto: req.body.foto,
+      personaId: req.body.personaId,
+      updatedAt: new Date()
+    };
 
-    if (!mascota) {
+    const result = await db.collection('mascotas').findOneAndUpdate(
+      { _id: new ObjectId(req.params.id) },
+      { $set: update },
+      { returnDocument: 'after' }
+    );
+
+    if (!result.value) {
       return res.status(404).json({ error: 'Mascota no encontrada' });
     }
-    res.json(mascota);
+    res.json(result.value);
   } catch (error) {
     console.error('Error actualizando mascota:', error);
     res.status(400).json({ error: error.message });
@@ -118,9 +119,13 @@ router.put('/:id', async (req, res) => {
 // DELETE - Eliminar una mascota
 router.delete('/:id', async (req, res) => {
   try {
-    await req.prisma.mascota.delete({
-      where: { id: req.params.id }
-    });
+    const db = req.db;
+    const result = await db.collection('mascotas').deleteOne({ _id: new ObjectId(req.params.id) });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Mascota no encontrada' });
+    }
+    
     res.json({ message: 'Mascota eliminada correctamente' });
   } catch (error) {
     console.error('Error eliminando mascota:', error);

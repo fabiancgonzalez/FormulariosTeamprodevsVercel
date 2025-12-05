@@ -2,20 +2,39 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const { PrismaClient } = require('@prisma/client');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 
-// Importar Prisma
-const prisma = new PrismaClient({
-  errorFormat: 'pretty',
-  log: ['error', 'warn'],
+const app = express();
+const PORT = process.env.PORT || 5001;
+
+// Configuración de MongoDB
+const mongoUri = process.env.DATABASE_URL || 'mongodb+srv://Vercel-Admin-formulariomascota:Fabian04533309@formulariomascota.tqebomv.mongodb.net/?retryWrites=true&w=majority';
+const mongoClient = new MongoClient(mongoUri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
 });
+
+let db = null;
+
+// Conectar a MongoDB al iniciar
+async function connectMongo() {
+  try {
+    await mongoClient.connect();
+    db = mongoClient.db('test');
+    console.log('[MONGO] ✓ Conectado a MongoDB Atlas');
+    return true;
+  } catch (error) {
+    console.error('[MONGO] ✗ Error conectando:', error.message);
+    process.exit(1);
+  }
+}
 
 // Importar rutas
 const personasRoutes = require('./backend-nodejs/routes/personas');
 const mascotasRoutes = require('./backend-nodejs/routes/mascotas');
-
-const app = express();
-const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors({
@@ -30,11 +49,16 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Middleware para pasar Prisma a las rutas
+console.log('[SETUP] Agregando middleware de MongoDB...');
+
+// Middleware para pasar DB a las rutas
 app.use((req, res, next) => {
-  req.prisma = prisma;
+  console.log('[MIDDLEWARE-DB]', req.method, req.path);
+  req.db = db;
   next();
 });
+
+console.log('[SETUP] Registrando rutas...');
 
 // Rutas
 app.use('/api/personas', personasRoutes);
@@ -47,7 +71,7 @@ app.get('/api/health', (req, res) => {
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('[ERROR]', err);
   res.status(err.status || 500).json({
     error: err.message || 'Error interno del servidor',
     status: err.status || 500
@@ -60,22 +84,30 @@ app.use((req, res) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`✓ Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`✓ API Health: http://localhost:${PORT}/api/health`);
-});
+async function startServer() {
+  await connectMongo();
+  
+  app.listen(PORT, () => {
+    console.log('[SERVER] DATABASE_URL:', process.env.DATABASE_URL ? 'Configurada' : 'NO configurada');
+    console.log(`[SERVER] ✓ Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`[SERVER] ✓ API Health: http://localhost:${PORT}/api/health`);
+  });
+}
+
+startServer();
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM recibido, cerrando...');
-  await prisma.$disconnect();
+  console.log('[SERVER] SIGTERM recibido, cerrando...');
+  await mongoClient.close();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('SIGINT recibido, cerrando...');
-  await prisma.$disconnect();
+  console.log('[SERVER] SIGINT recibido, cerrando...');
+  await mongoClient.close();
   process.exit(0);
 });
 
 module.exports = app;
+

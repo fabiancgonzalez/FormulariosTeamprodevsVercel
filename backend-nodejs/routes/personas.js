@@ -4,10 +4,8 @@ const router = express.Router();
 // GET - Obtener todas las personas
 router.get('/', async (req, res) => {
   try {
-    const personas = await req.prisma.persona.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: { mascotas: true }
-    });
+    const db = req.db;
+    const personas = await db.collection('personas').find({}).sort({ createdAt: -1 }).toArray();
     res.json(personas);
   } catch (error) {
     console.error('Error obteniendo personas:', error);
@@ -18,10 +16,9 @@ router.get('/', async (req, res) => {
 // GET - Obtener una persona por ID
 router.get('/:id', async (req, res) => {
   try {
-    const persona = await req.prisma.persona.findUnique({
-      where: { id: req.params.id },
-      include: { mascotas: true }
-    });
+    const { ObjectId } = require('mongodb');
+    const db = req.db;
+    const persona = await db.collection('personas').findOne({ _id: new ObjectId(req.params.id) });
     if (!persona) {
       return res.status(404).json({ error: 'Persona no encontrada' });
     }
@@ -35,19 +32,20 @@ router.get('/:id', async (req, res) => {
 // POST - Crear una nueva persona
 router.post('/', async (req, res) => {
   try {
-    const persona = await req.prisma.persona.create({
-      data: {
-        nombre: req.body.nombre,
-        apellido: req.body.apellido,
-        email: req.body.email,
-        telefono: req.body.telefono,
-        cedula: req.body.cedula,
-        direccion: req.body.direccion,
-        ciudad: req.body.ciudad
-      },
-      include: { mascotas: true }
-    });
-    res.status(201).json(persona);
+    const db = req.db;
+    const persona = {
+      nombre: req.body.nombre,
+      apellido: req.body.apellido,
+      email: req.body.email,
+      telefono: req.body.telefono,
+      cedula: req.body.cedula,
+      direccion: req.body.direccion,
+      ciudad: req.body.ciudad,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    const result = await db.collection('personas').insertOne(persona);
+    res.status(201).json({ ...persona, _id: result.insertedId });
   } catch (error) {
     console.error('Error creando persona:', error);
     res.status(400).json({ error: error.message });
@@ -57,20 +55,27 @@ router.post('/', async (req, res) => {
 // PUT - Actualizar una persona
 router.put('/:id', async (req, res) => {
   try {
-    const persona = await req.prisma.persona.update({
-      where: { id: req.params.id },
-      data: {
-        nombre: req.body.nombre,
-        apellido: req.body.apellido,
-        email: req.body.email,
-        telefono: req.body.telefono,
-        cedula: req.body.cedula,
-        direccion: req.body.direccion,
-        ciudad: req.body.ciudad
-      },
-      include: { mascotas: true }
-    });
-    res.json(persona);
+    const { ObjectId } = require('mongodb');
+    const db = req.db;
+    const update = {
+      nombre: req.body.nombre,
+      apellido: req.body.apellido,
+      email: req.body.email,
+      telefono: req.body.telefono,
+      cedula: req.body.cedula,
+      direccion: req.body.direccion,
+      ciudad: req.body.ciudad,
+      updatedAt: new Date()
+    };
+    const result = await db.collection('personas').findOneAndUpdate(
+      { _id: new ObjectId(req.params.id) },
+      { $set: update },
+      { returnDocument: 'after' }
+    );
+    if (!result.value) {
+      return res.status(404).json({ error: 'Persona no encontrada' });
+    }
+    res.json(result.value);
   } catch (error) {
     console.error('Error actualizando persona:', error);
     res.status(400).json({ error: error.message });
@@ -80,15 +85,18 @@ router.put('/:id', async (req, res) => {
 // DELETE - Eliminar una persona
 router.delete('/:id', async (req, res) => {
   try {
+    const { ObjectId } = require('mongodb');
+    const db = req.db;
+    
     // Primero eliminar mascotas relacionadas
-    await req.prisma.mascota.deleteMany({
-      where: { personaId: req.params.id }
-    });
+    await db.collection('mascotas').deleteMany({ personaId: req.params.id });
     
     // Luego eliminar la persona
-    await req.prisma.persona.delete({
-      where: { id: req.params.id }
-    });
+    const result = await db.collection('personas').deleteOne({ _id: new ObjectId(req.params.id) });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Persona no encontrada' });
+    }
     
     res.json({ message: 'Persona eliminada correctamente' });
   } catch (error) {
