@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET - Obtener mascotas por persona
+// GET - Obtener mascotas por persona (DEBE IR ANTES de /:id)
 router.get('/persona/:personaId', async (req, res) => {
   try {
     const db = req.db;
@@ -28,22 +28,7 @@ router.get('/persona/:personaId', async (req, res) => {
   }
 });
 
-// GET - Obtener una mascota por ID
-router.get('/:id', async (req, res) => {
-  try {
-    const db = req.db;
-    const mascota = await db.collection('mascotas').findOne({ _id: new ObjectId(req.params.id) });
-    if (!mascota) {
-      return res.status(404).json({ error: 'Mascota no encontrada' });
-    }
-    res.json(mascota);
-  } catch (error) {
-    console.error('Error obteniendo mascota:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// POST - Crear una nueva mascota
+// POST - Crear una nueva mascota (DEBE IR ANTES de /:id para evitar confusión)
 router.post('/', async (req, res) => {
   try {
     const db = req.db;
@@ -72,6 +57,21 @@ router.post('/', async (req, res) => {
   } catch (error) {
     console.error('Error creando mascota:', error);
     res.status(400).json({ error: error.message });
+  }
+});
+
+// GET - Obtener una mascota por ID
+router.get('/:id', async (req, res) => {
+  try {
+    const db = req.db;
+    const mascota = await db.collection('mascotas').findOne({ _id: new ObjectId(req.params.id) });
+    if (!mascota) {
+      return res.status(404).json({ error: 'Mascota no encontrada' });
+    }
+    res.json(mascota);
+  } catch (error) {
+    console.error('Error obteniendo mascota:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
