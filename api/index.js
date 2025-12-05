@@ -5,7 +5,10 @@ const bodyParser = require('body-parser');
 
 // Importar Prisma
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  errorFormat: 'pretty',
+  log: ['error', 'warn'],
+});
 
 // Importar rutas
 const personasRoutes = require('../backend-nodejs/routes/personas');
@@ -18,6 +21,7 @@ app.use(cors({
   origin: [
     'http://localhost:4200',
     'http://localhost:3000',
+    'https://formulariomascota.vercel.app',
     process.env.CORS_ORIGIN || '*'
   ],
   credentials: true
