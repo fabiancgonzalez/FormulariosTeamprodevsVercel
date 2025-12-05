@@ -25,11 +25,14 @@ import { CommonModule } from '@angular/common';
   styleUrl: './formulariopersona.css',
 })
 export class Formulariopersona {
-  personaId = signal<number | null>(null);
+  personaId = signal<string | null>(null);
   nombre = signal('');
   apellido = signal('');
   email = signal('');
   telefono = signal('');
+  cedula = signal('');
+  ciudad = signal('');
+  direccion = signal('');
   fechaNacimiento = signal('');
   estatura = signal('');
   mensajeGuardado = signal('');
@@ -58,8 +61,9 @@ export class Formulariopersona {
       apellido: this.apellido(),
       email: this.email(),
       telefono: this.telefono(),
-      fecha_nacimiento: this.fechaNacimiento(),
-      estatura: this.estatura()
+      cedula: this.cedula(),
+      ciudad: this.ciudad(),
+      direccion: this.direccion()
     };
 
     this.dataService.crearPersona(datosPersona).subscribe({
@@ -89,13 +93,14 @@ export class Formulariopersona {
   }
 
   seleccionarPersona(persona: any) {
-    this.personaId.set(persona.id);
+    this.personaId.set(persona._id);
     this.nombre.set(persona.nombre);
     this.apellido.set(persona.apellido);
     this.email.set(persona.email || '');
     this.telefono.set(persona.telefono || '');
-    this.fechaNacimiento.set(persona.fecha_nacimiento || '');
-    this.estatura.set(persona.estatura || '');
+    this.cedula.set(persona.cedula || '');
+    this.ciudad.set(persona.ciudad || '');
+    this.direccion.set(persona.direccion || '');
     this.modoEdicion.set(true);
     this.mensajeGuardado.set('');
     this.error.set('');
@@ -119,10 +124,11 @@ export class Formulariopersona {
     const datosPersona: any = {
       nombre: this.nombre(),
       apellido: this.apellido(),
-      email: this.email() || null,
-      telefono: this.telefono() || null,
-      fecha_nacimiento: this.fechaNacimiento() || null,
-      estatura: this.estatura() ? parseFloat(this.estatura()) : null
+      email: this.email() || '',
+      telefono: this.telefono() || '',
+      cedula: this.cedula() || '',
+      ciudad: this.ciudad() || '',
+      direccion: this.direccion() || ''
     };
 
     console.log('Actualizando persona:', this.personaId(), datosPersona);
@@ -179,8 +185,9 @@ export class Formulariopersona {
     this.apellido.set('');
     this.email.set('');
     this.telefono.set('');
-    this.fechaNacimiento.set('');
-    this.estatura.set('');
+    this.cedula.set('');
+    this.ciudad.set('');
+    this.direccion.set('');
     this.modoEdicion.set(false);
   }
 }

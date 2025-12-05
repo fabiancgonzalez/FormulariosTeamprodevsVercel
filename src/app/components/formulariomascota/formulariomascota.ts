@@ -23,13 +23,15 @@ import { CommonModule } from '@angular/common';
   styleUrl: './formulariomascota.css',
 })
 export class Formulariomascota {
-  mascotaId = signal<number | null>(null);
-  idPersona = signal<number | null>(null);
+  mascotaId = signal<string | null>(null);
+  idPersona = signal<string | null>(null);
   nombre = signal('');
+  tipo = signal('');
   especie = signal('');
   raza = signal('');
   color = signal('');
   edad = signal('');
+  descripcion = signal('');
   mensajeGuardado = signal('');
   cargando = signal(false);
   error = signal('');
@@ -59,7 +61,7 @@ export class Formulariomascota {
 
   guardarMascota() {
     // Validar que los campos requeridos estén llenos
-    if (!this.nombre() || !this.especie()) {
+    if (!this.nombre() || !this.tipo()) {
       this.error.set('Por favor completa los campos requeridos (Nombre y Especie)');
       return;
     }
@@ -75,11 +77,12 @@ export class Formulariomascota {
 
     const datosMascota: any = {
       nombre: this.nombre(),
-      tipo: this.especie(),
-      raza: this.raza() || null,
-      color: this.color() || null,
-      edad: this.edad() ? parseInt(this.edad()) : null,
-      id_persona: this.idPersona()
+      tipo: this.tipo(),
+      raza: this.raza() || '',
+      color: this.color() || '',
+      edad: this.edad() ? parseInt(this.edad()) : 0,
+      personaId: this.idPersona(),
+      descripcion: this.descripcion() || ''
     };
 
     console.log('Guardando mascota:', datosMascota);
@@ -112,13 +115,16 @@ export class Formulariomascota {
   }
 
   seleccionarMascota(mascota: any) {
-    this.mascotaId.set(mascota.id);
+    this.mascotaId.set(mascota._id);
     this.nombre.set(mascota.nombre);
-    this.especie.set(mascota.tipo);
+    this.tipo.set(mascota.tipo);
     this.raza.set(mascota.raza || '');
     this.color.set(mascota.color || '');
     this.edad.set(mascota.edad ? mascota.edad.toString() : '');
-    this.idPersona.set(mascota.id_persona || null);
+    this.descripcion.set(mascota.descripcion || '');
+    // Extraer el ID correctamente si personaId es un objeto o un string
+    const personaId = typeof mascota.personaId === 'string' ? mascota.personaId : mascota.personaId?._id;
+    this.idPersona.set(personaId || null);
     this.modoEdicion.set(true);
     this.mensajeGuardado.set('');
     this.error.set('');
@@ -130,7 +136,7 @@ export class Formulariomascota {
       return;
     }
 
-    if (!this.nombre() || !this.especie()) {
+    if (!this.nombre() || !this.tipo()) {
       this.error.set('Por favor completa los campos requeridos (Nombre y Especie)');
       return;
     }
@@ -141,11 +147,12 @@ export class Formulariomascota {
 
     const datosMascota: any = {
       nombre: this.nombre(),
-      tipo: this.especie(),
-      raza: this.raza() || null,
-      color: this.color() || null,
-      edad: this.edad() ? parseInt(this.edad()) : null,
-      id_persona: this.idPersona()
+      tipo: this.tipo(),
+      raza: this.raza() || '',
+      color: this.color() || '',
+      edad: this.edad() ? parseInt(this.edad()) : 0,
+      personaId: this.idPersona(),
+      descripcion: this.descripcion() || ''
     };
 
     console.log('Actualizando mascota:', this.mascotaId(), datosMascota);
@@ -200,10 +207,11 @@ export class Formulariomascota {
     this.mascotaId.set(null);
     this.idPersona.set(null);
     this.nombre.set('');
-    this.especie.set('');
+    this.tipo.set('');
     this.raza.set('');
     this.color.set('');
     this.edad.set('');
+    this.descripcion.set('');
     this.modoEdicion.set(false);
   }
 }

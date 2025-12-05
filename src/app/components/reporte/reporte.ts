@@ -61,7 +61,8 @@ export class Reporte implements OnInit {
   }
 
   filtrarPorNombre() {
-    const filtro = this.filtroNombre().toLowerCase().trim();
+    const filtro = this.filtroNombre().toLowerCase().trim()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     
     if (!filtro) {
       this.personasFiltradas.set(this.personas());
@@ -69,8 +70,8 @@ export class Reporte implements OnInit {
     }
 
     const filtradas = this.personas().filter(persona => 
-      persona.nombre.toLowerCase().includes(filtro) || 
-      persona.apellido.toLowerCase().includes(filtro)
+      persona.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(filtro) || 
+      persona.apellido.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(filtro)
     );
     
     this.personasFiltradas.set(filtradas);

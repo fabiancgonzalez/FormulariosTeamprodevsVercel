@@ -23,8 +23,8 @@
     <p>Persona *</p>
     <mat-form-field>
       <mat-label>Selecciona una persona:</mat-label>
-      <mat-select [(ngModel)]="idPersona" [compareWith]="compareFn">
-        <mat-option *ngFor="let persona of personas()" [value]="persona.id">
+      <mat-select [ngModel]="idPersona()" (ngModelChange)="idPersona.set($event)" [compareWith]="compareFn">
+        <mat-option *ngFor="let persona of personas()" [value]="persona._id">
           {{ persona.nombre }} {{ persona.apellido }}
         </mat-option>
       </mat-select>
@@ -38,8 +38,14 @@
 
     <p>Especie *</p>
     <mat-form-field>
-      <mat-label>Ingrese la especie:</mat-label>
-      <input matInput [(ngModel)]="especie" placeholder="perro, gato, etc.">
+      <mat-label>Selecciona la especie:</mat-label>
+      <mat-select [ngModel]="tipo()" (ngModelChange)="tipo.set($event)">
+        <mat-option value="perro">Perro</mat-option>
+        <mat-option value="gato">Gato</mat-option>
+        <mat-option value="pajaro">Pájaro</mat-option>
+        <mat-option value="conejo">Conejo</mat-option>
+        <mat-option value="otro">Otro</mat-option>
+      </mat-select>
     </mat-form-field>
 
     <p>Raza</p>
