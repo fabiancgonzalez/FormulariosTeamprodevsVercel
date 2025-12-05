@@ -24,7 +24,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // MongoDB
-const mongoUri = process.env.DATABASE_URL || 'mongodb+srv://Vercel-Admin-formulariomascota:Fabian04533309@formulariomascota.tqebomv.mongodb.net/?retryWrites=true&w=majority';
+const mongoUri = process.env.DATABASE_URL || 'mongodb+srv://Vercel-Admin-formulariomascota:xxxxxxxxxx@formulariomascota.tqebomv.mongodb.net/?retryWrites=true&w=majority';
 const mongoClient = new MongoClient(mongoUri, {
   serverApi: {
     version: ServerApiVersion.v1,
