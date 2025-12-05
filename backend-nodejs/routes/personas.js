@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const Persona = require('../models/Persona');
 
 // GET - Obtener todas las personas
 router.get('/', async (req, res) => {
   try {
-    const personas = await Persona.find().sort({ createdAt: -1 });
+    const personas = await req.prisma.persona.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { mascotas: true }
+    });
     res.json(personas);
   } catch (error) {
+    console.error('Error obteniendo personas:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -15,12 +18,16 @@ router.get('/', async (req, res) => {
 // GET - Obtener una persona por ID
 router.get('/:id', async (req, res) => {
   try {
-    const persona = await Persona.findById(req.params.id);
+    const persona = await req.prisma.persona.findUnique({
+      where: { id: req.params.id },
+      include: { mascotas: true }
+    });
     if (!persona) {
       return res.status(404).json({ error: 'Persona no encontrada' });
     }
     res.json(persona);
   } catch (error) {
+    console.error('Error obteniendo persona:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -28,10 +35,21 @@ router.get('/:id', async (req, res) => {
 // POST - Crear una nueva persona
 router.post('/', async (req, res) => {
   try {
-    const persona = new Persona(req.body);
-    const result = await persona.save();
-    res.status(201).json(result);
+    const persona = await req.prisma.persona.create({
+      data: {
+        nombre: req.body.nombre,
+        apellido: req.body.apellido,
+        email: req.body.email,
+        telefono: req.body.telefono,
+        cedula: req.body.cedula,
+        direccion: req.body.direccion,
+        ciudad: req.body.ciudad
+      },
+      include: { mascotas: true }
+    });
+    res.status(201).json(persona);
   } catch (error) {
+    console.error('Error creando persona:', error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -39,16 +57,22 @@ router.post('/', async (req, res) => {
 // PUT - Actualizar una persona
 router.put('/:id', async (req, res) => {
   try {
-    const persona = await Persona.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    if (!persona) {
-      return res.status(404).json({ error: 'Persona no encontrada' });
-    }
+    const persona = await req.prisma.persona.update({
+      where: { id: req.params.id },
+      data: {
+        nombre: req.body.nombre,
+        apellido: req.body.apellido,
+        email: req.body.email,
+        telefono: req.body.telefono,
+        cedula: req.body.cedula,
+        direccion: req.body.direccion,
+        ciudad: req.body.ciudad
+      },
+      include: { mascotas: true }
+    });
     res.json(persona);
   } catch (error) {
+    console.error('Error actualizando persona:', error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -56,12 +80,19 @@ router.put('/:id', async (req, res) => {
 // DELETE - Eliminar una persona
 router.delete('/:id', async (req, res) => {
   try {
-    const persona = await Persona.findByIdAndDelete(req.params.id);
-    if (!persona) {
-      return res.status(404).json({ error: 'Persona no encontrada' });
-    }
+    // Primero eliminar mascotas relacionadas
+    await req.prisma.mascota.deleteMany({
+      where: { personaId: req.params.id }
+    });
+    
+    // Luego eliminar la persona
+    await req.prisma.persona.delete({
+      where: { id: req.params.id }
+    });
+    
     res.json({ message: 'Persona eliminada correctamente' });
   } catch (error) {
+    console.error('Error eliminando persona:', error);
     res.status(500).json({ error: error.message });
   }
 });
