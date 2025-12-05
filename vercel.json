@@ -2,9 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "angular",
-  "env": [
-    "MONGODB_URI"
-  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
