@@ -22,7 +22,7 @@ let db = null;
 async function connectMongo() {
   try {
     await mongoClient.connect();
-    db = mongoClient.db('test');
+    db = mongoClient.db('formulariomascotas');
     console.log('[MONGO] ✓ Conectado a MongoDB Atlas');
     return true;
   } catch (error) {

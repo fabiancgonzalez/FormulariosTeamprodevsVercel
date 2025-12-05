@@ -23,7 +23,7 @@ let db = null;
 async function connectMongo() {
   try {
     await mongoClient.connect();
-    db = mongoClient.db('test');
+    db = mongoClient.db('formulariomascotas');
     console.log('[MONGO] ✓ Conectado a MongoDB Atlas');
     return true;
   } catch (error) {
@@ -53,6 +53,9 @@ console.log('[SETUP] Agregando middleware de MongoDB...');
 
 // Middleware para pasar DB a las rutas
 app.use((req, res, next) => {
+  if (!db) {
+    return res.status(500).json({ error: 'Base de datos no disponible' });
+  }
   console.log('[MIDDLEWARE-DB]', req.method, req.path);
   req.db = db;
   next();
