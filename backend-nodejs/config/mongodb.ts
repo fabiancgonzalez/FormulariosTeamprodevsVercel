@@ -14,7 +14,7 @@ const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://Vercel-Admin-formular
 let client: MongoClient | null = null;
 
 async function getMongoClient(): Promise<MongoClient> {
-  if (client && client.topology && client.topology.isConnected()) {
+  if (client) {
     return client;
   }
 

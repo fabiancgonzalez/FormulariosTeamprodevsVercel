@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { ObjectId } = require('mongodb');
 
+// Middleware para buscar por ID (string o ObjectId)
+const findByIdMiddleware = (req, res, next) => {
+  // Guardar el ID en el request para usarlo después
+  req.recordId = req.params.id;
+  next();
+};
+
 // GET - Obtener todas las mascotas
 router.get('/', async (req, res) => {
   try {
@@ -14,7 +21,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET - Obtener mascotas por persona (DEBE IR ANTES de /:id)
+// GET - Obtener mascotas por persona
 router.get('/persona/:personaId', async (req, res) => {
   try {
     const db = req.db;
@@ -28,13 +35,18 @@ router.get('/persona/:personaId', async (req, res) => {
   }
 });
 
-// POST - Crear una nueva mascota (DEBE IR ANTES de /:id para evitar confusión)
+// POST - Crear una nueva mascota
 router.post('/', async (req, res) => {
   try {
     const db = req.db;
     
     // Verificar que la persona existe
-    const persona = await db.collection('personas').findOne({ _id: new ObjectId(req.body.personaId) });
+    const persona = await db.collection('personas').findOne({ 
+      $or: [
+        { _id: new ObjectId(req.body.personaId) },
+        { _id: req.body.personaId }
+      ]
+    });
     if (!persona) {
       return res.status(404).json({ error: 'Persona no encontrada' });
     }
@@ -45,8 +57,7 @@ router.post('/', async (req, res) => {
       raza: req.body.raza,
       color: req.body.color,
       edad: req.body.edad ? parseInt(req.body.edad) : null,
-      descripcion: req.body.descripcion,
-      foto: req.body.foto,
+     
       personaId: req.body.personaId,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -61,10 +72,15 @@ router.post('/', async (req, res) => {
 });
 
 // GET - Obtener una mascota por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', findByIdMiddleware, async (req, res) => {
   try {
     const db = req.db;
-    const mascota = await db.collection('mascotas').findOne({ _id: new ObjectId(req.params.id) });
+    const mascota = await db.collection('mascotas').findOne({ 
+      $or: [
+        { _id: new ObjectId(req.params.id) },
+        { _id: req.params.id }
+      ]
+    });
     if (!mascota) {
       return res.status(404).json({ error: 'Mascota no encontrada' });
     }
@@ -76,13 +92,18 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT - Actualizar una mascota
-router.put('/:id', async (req, res) => {
+router.put('/:id', findByIdMiddleware, async (req, res) => {
   try {
     const db = req.db;
     
     // Si se está actualizando personaId, verificar que existe
     if (req.body.personaId) {
-      const persona = await db.collection('personas').findOne({ _id: new ObjectId(req.body.personaId) });
+      const persona = await db.collection('personas').findOne({ 
+        $or: [
+          { _id: new ObjectId(req.body.personaId) },
+          { _id: req.body.personaId }
+        ]
+      });
       if (!persona) {
         return res.status(404).json({ error: 'Persona no encontrada' });
       }
@@ -94,14 +115,18 @@ router.put('/:id', async (req, res) => {
       raza: req.body.raza,
       color: req.body.color,
       edad: req.body.edad ? parseInt(req.body.edad) : null,
-      descripcion: req.body.descripcion,
-      foto: req.body.foto,
+     
       personaId: req.body.personaId,
       updatedAt: new Date()
     };
 
     const result = await db.collection('mascotas').findOneAndUpdate(
-      { _id: new ObjectId(req.params.id) },
+      { 
+        $or: [
+          { _id: new ObjectId(req.params.id) },
+          { _id: req.params.id }
+        ]
+      },
       { $set: update },
       { returnDocument: 'after' }
     );
@@ -117,10 +142,15 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE - Eliminar una mascota
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', findByIdMiddleware, async (req, res) => {
   try {
     const db = req.db;
-    const result = await db.collection('mascotas').deleteOne({ _id: new ObjectId(req.params.id) });
+    const result = await db.collection('mascotas').deleteOne({ 
+      $or: [
+        { _id: new ObjectId(req.params.id) },
+        { _id: req.params.id }
+      ]
+    });
     
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Mascota no encontrada' });

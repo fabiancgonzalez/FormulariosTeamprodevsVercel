@@ -6,12 +6,8 @@ import { map } from 'rxjs/operators';
 export interface Persona {
   _id?: string;
   nombre: string;
-  apellido: string;
-  email: string;
-  telefono?: string;
-  cedula?: string;
-  direccion?: string;
-  ciudad?: string;
+  fechaNacimiento?: string;
+  estatura?: string;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -23,13 +23,13 @@
   <div *ngIf="!cargando() && personasFiltradas().length > 0" class="personas-list">
     <mat-card *ngFor="let persona of personasFiltradas()" class="persona-card">
       <mat-card-header>
-        <mat-card-title>{{ persona.nombre }} {{ persona.apellido }}</mat-card-title>
+        <mat-card-title>{{ persona.nombre }}</mat-card-title>
       </mat-card-header>
       
       <mat-card-content>
         <div class="persona-info">
-          <p><strong>Email:</strong> {{ persona.email || 'N/A' }}</p>
-          <p><strong>Teléfono:</strong> {{ persona.telefono || 'N/A' }}</p>
+          <p><strong>Fecha de Nacimiento:</strong> {{ persona.fechaNacimiento || 'N/A' }}</p>
+          <p><strong>Estatura:</strong> {{ persona.estatura || 'N/A' }} cm</p>
         </div>
         
         <div class="mascotas-section">

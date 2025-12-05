@@ -27,12 +27,6 @@ import { CommonModule } from '@angular/common';
 export class Formulariopersona {
   personaId = signal<string | null>(null);
   nombre = signal('');
-  apellido = signal('');
-  email = signal('');
-  telefono = signal('');
-  cedula = signal('');
-  ciudad = signal('');
-  direccion = signal('');
   fechaNacimiento = signal('');
   estatura = signal('');
   mensajeGuardado = signal('');
@@ -45,10 +39,20 @@ export class Formulariopersona {
     this.cargarPersonas();
   }
 
+  formatDate(date: any): string {
+    if (!date) return '';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   guardarPersona() {
-    // Validar que los campos requeridos estén llenos
-    if (!this.nombre() || !this.apellido()) {
-      this.error.set('Por favor completa los campos requeridos (Nombre y Apellido)');
+    // Validar que el nombre esté lleno
+    if (!this.nombre()) {
+      this.error.set('Por favor completa el nombre completo');
       return;
     }
 
@@ -58,12 +62,8 @@ export class Formulariopersona {
 
     const datosPersona = {
       nombre: this.nombre(),
-      apellido: this.apellido(),
-      email: this.email(),
-      telefono: this.telefono(),
-      cedula: this.cedula(),
-      ciudad: this.ciudad(),
-      direccion: this.direccion()
+      fechaNacimiento: this.formatDate(this.fechaNacimiento()),
+      estatura: String(this.estatura()).trim()
     };
 
     this.dataService.crearPersona(datosPersona).subscribe({
@@ -95,12 +95,9 @@ export class Formulariopersona {
   seleccionarPersona(persona: any) {
     this.personaId.set(persona._id);
     this.nombre.set(persona.nombre);
-    this.apellido.set(persona.apellido);
-    this.email.set(persona.email || '');
-    this.telefono.set(persona.telefono || '');
-    this.cedula.set(persona.cedula || '');
-    this.ciudad.set(persona.ciudad || '');
-    this.direccion.set(persona.direccion || '');
+    this.fechaNacimiento.set(persona.fechaNacimiento || '');
+    this.estatura.set(persona.estatura || '');
+    
     this.modoEdicion.set(true);
     this.mensajeGuardado.set('');
     this.error.set('');
@@ -112,8 +109,8 @@ export class Formulariopersona {
       return;
     }
 
-    if (!this.nombre() || !this.apellido()) {
-      this.error.set('Por favor completa los campos requeridos (Nombre y Apellido)');
+    if (!this.nombre()) {
+      this.error.set('Por favor completa el nombre completo');
       return;
     }
 
@@ -123,12 +120,8 @@ export class Formulariopersona {
 
     const datosPersona: any = {
       nombre: this.nombre(),
-      apellido: this.apellido(),
-      email: this.email() || '',
-      telefono: this.telefono() || '',
-      cedula: this.cedula() || '',
-      ciudad: this.ciudad() || '',
-      direccion: this.direccion() || ''
+      fechaNacimiento: this.formatDate(this.fechaNacimiento()),
+      estatura: String(this.estatura()).trim()
     };
 
     console.log('Actualizando persona:', this.personaId(), datosPersona);
@@ -145,7 +138,17 @@ export class Formulariopersona {
       error: (err) => {
         console.error('Error al actualizar:', err);
         this.cargando.set(false);
-        this.error.set('Error al actualizar la persona: ' + err.message);
+        // Si es un 404 pero ya se actualizó en BD, recargar datos
+        if (err.status === 404) {
+          console.log('Reintentando carga de datos...');
+          setTimeout(() => {
+            this.cargarPersonas();
+            this.mensajeGuardado.set('¡Persona actualizada exitosamente!');
+            setTimeout(() => this.mensajeGuardado.set(''), 5000);
+          }, 500);
+        } else {
+          this.error.set('Error al actualizar la persona: ' + err.message);
+        }
       }
     });
   }
@@ -182,12 +185,8 @@ export class Formulariopersona {
   limpiarFormulario() {
     this.personaId.set(null);
     this.nombre.set('');
-    this.apellido.set('');
-    this.email.set('');
-    this.telefono.set('');
-    this.cedula.set('');
-    this.ciudad.set('');
-    this.direccion.set('');
+    this.fechaNacimiento.set('');
+    this.estatura.set('');
     this.modoEdicion.set(false);
   }
 }

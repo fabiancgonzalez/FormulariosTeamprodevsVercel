@@ -29,13 +29,7 @@ const mascotaSchema = new mongoose.Schema({
     ref: 'Persona',
     required: true
   },
-  descripcion: {
-    type: String,
-    trim: true
-  },
-  foto: {
-    type: String
-  },
+ 
   createdAt: {
     type: Date,
     default: Date.now

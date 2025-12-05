@@ -1,35 +1,21 @@
 const express = require('express');
 const router = express.Router();
+const { ObjectId } = require('mongodb');
+
+// Middleware para buscar por ID (string o ObjectId)
+const findByIdMiddleware = (req, res, next) => {
+  req.recordId = req.params.id;
+  next();
+};
 
 // GET - Obtener todas las personas
 router.get('/', async (req, res) => {
   try {
-    console.log('[PERSONAS] GET / - req.db:', typeof req.db);
     const db = req.db;
-    if (!db) {
-      return res.status(500).json({ error: 'DB not available in route' });
-    }
     const personas = await db.collection('personas').find({}).sort({ createdAt: -1 }).toArray();
-    console.log('[PERSONAS] ✓ Encontradas', personas.length, 'personas');
     res.json(personas);
   } catch (error) {
-    console.error('[PERSONAS] Error obteniendo personas:', error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// GET - Obtener una persona por ID
-router.get('/:id', async (req, res) => {
-  try {
-    const { ObjectId } = require('mongodb');
-    const db = req.db;
-    const persona = await db.collection('personas').findOne({ _id: new ObjectId(req.params.id) });
-    if (!persona) {
-      return res.status(404).json({ error: 'Persona no encontrada' });
-    }
-    res.json(persona);
-  } catch (error) {
-    console.error('Error obteniendo persona:', error);
+    console.error('Error obteniendo personas:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -40,12 +26,8 @@ router.post('/', async (req, res) => {
     const db = req.db;
     const persona = {
       nombre: req.body.nombre,
-      apellido: req.body.apellido,
-      email: req.body.email,
-      telefono: req.body.telefono,
-      cedula: req.body.cedula,
-      direccion: req.body.direccion,
-      ciudad: req.body.ciudad,
+      fechaNacimiento: req.body.fechaNacimiento || '',
+      estatura: req.body.estatura ? req.body.estatura.toString() : '',
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -57,23 +39,43 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT - Actualizar una persona
-router.put('/:id', async (req, res) => {
+// GET - Obtener una persona por ID
+router.get('/:id', findByIdMiddleware, async (req, res) => {
   try {
-    const { ObjectId } = require('mongodb');
+    const db = req.db;
+    const persona = await db.collection('personas').findOne({ 
+      $or: [
+        { _id: new ObjectId(req.params.id) },
+        { _id: req.params.id }
+      ]
+    });
+    if (!persona) {
+      return res.status(404).json({ error: 'Persona no encontrada' });
+    }
+    res.json(persona);
+  } catch (error) {
+    console.error('Error obteniendo persona:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT - Actualizar una persona
+router.put('/:id', findByIdMiddleware, async (req, res) => {
+  try {
     const db = req.db;
     const update = {
       nombre: req.body.nombre,
-      apellido: req.body.apellido,
-      email: req.body.email,
-      telefono: req.body.telefono,
-      cedula: req.body.cedula,
-      direccion: req.body.direccion,
-      ciudad: req.body.ciudad,
+      fechaNacimiento: req.body.fechaNacimiento || '',
+      estatura: req.body.estatura ? req.body.estatura.toString() : '',
       updatedAt: new Date()
     };
     const result = await db.collection('personas').findOneAndUpdate(
-      { _id: new ObjectId(req.params.id) },
+      { 
+        $or: [
+          { _id: new ObjectId(req.params.id) },
+          { _id: req.params.id }
+        ]
+      },
       { $set: update },
       { returnDocument: 'after' }
     );
@@ -88,16 +90,20 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE - Eliminar una persona
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', findByIdMiddleware, async (req, res) => {
   try {
-    const { ObjectId } = require('mongodb');
     const db = req.db;
     
     // Primero eliminar mascotas relacionadas
     await db.collection('mascotas').deleteMany({ personaId: req.params.id });
     
     // Luego eliminar la persona
-    const result = await db.collection('personas').deleteOne({ _id: new ObjectId(req.params.id) });
+    const result = await db.collection('personas').deleteOne({ 
+      $or: [
+        { _id: new ObjectId(req.params.id) },
+        { _id: req.params.id }
+      ]
+    });
     
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Persona no encontrada' });

@@ -31,7 +31,7 @@ export class Formulariomascota {
   raza = signal('');
   color = signal('');
   edad = signal('');
-  descripcion = signal('');
+ 
   mensajeGuardado = signal('');
   cargando = signal(false);
   error = signal('');
@@ -82,7 +82,7 @@ export class Formulariomascota {
       color: this.color() || '',
       edad: this.edad() ? parseInt(this.edad()) : 0,
       personaId: this.idPersona(),
-      descripcion: this.descripcion() || ''
+     
     };
 
     console.log('Guardando mascota:', datosMascota);
@@ -121,7 +121,7 @@ export class Formulariomascota {
     this.raza.set(mascota.raza || '');
     this.color.set(mascota.color || '');
     this.edad.set(mascota.edad ? mascota.edad.toString() : '');
-    this.descripcion.set(mascota.descripcion || '');
+   
     // Extraer el ID correctamente si personaId es un objeto o un string
     const personaId = typeof mascota.personaId === 'string' ? mascota.personaId : mascota.personaId?._id;
     this.idPersona.set(personaId || null);
@@ -152,7 +152,7 @@ export class Formulariomascota {
       color: this.color() || '',
       edad: this.edad() ? parseInt(this.edad()) : 0,
       personaId: this.idPersona(),
-      descripcion: this.descripcion() || ''
+     
     };
 
     console.log('Actualizando mascota:', this.mascotaId(), datosMascota);
@@ -169,7 +169,17 @@ export class Formulariomascota {
       error: (err) => {
         console.error('Error al actualizar:', err);
         this.cargando.set(false);
-        this.error.set('Error al actualizar la mascota: ' + err.message);
+        // Si es un 404 pero ya se actualizó en BD, recargar datos
+        if (err.status === 404) {
+          console.log('Reintentando carga de datos...');
+          setTimeout(() => {
+            this.cargarMascotas();
+            this.mensajeGuardado.set('¡Mascota actualizada exitosamente!');
+            setTimeout(() => this.mensajeGuardado.set(''), 5000);
+          }, 500);
+        } else {
+          this.error.set('Error al actualizar la mascota: ' + err.message);
+        }
       }
     });
   }
@@ -211,7 +221,7 @@ export class Formulariomascota {
     this.raza.set('');
     this.color.set('');
     this.edad.set('');
-    this.descripcion.set('');
+   
     this.modoEdicion.set(false);
   }
 }

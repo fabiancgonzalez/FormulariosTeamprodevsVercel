@@ -8,11 +8,10 @@ import { MatCardModule } from '@angular/material/card';
 import { DataService } from '../../services/data.service';
 
 interface PersonaConMascotas {
-  id: number;
+  _id?: string;
   nombre: string;
-  apellido: string;
-  email?: string;
-  telefono?: string;
+  fechaNacimiento?: string;
+  estatura?: string;
   mascotas: any[];
 }
 
@@ -49,8 +48,12 @@ export class Reporte implements OnInit {
     
     this.dataService.getPersonasConMascotas().subscribe({
       next: (data) => {
-        this.personas.set(data);
-        this.personasFiltradas.set(data);
+        // Ordenar por nombre alfabéticamente
+        const datosOrdenados = data.sort((a, b) => 
+          a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
+        );
+        this.personas.set(datosOrdenados);
+        this.personasFiltradas.set(datosOrdenados);
         this.cargando.set(false);
       },
       error: (err) => {
@@ -70,8 +73,7 @@ export class Reporte implements OnInit {
     }
 
     const filtradas = this.personas().filter(persona => 
-      persona.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(filtro) || 
-      persona.apellido.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(filtro)
+      persona.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(filtro)
     );
     
     this.personasFiltradas.set(filtradas);

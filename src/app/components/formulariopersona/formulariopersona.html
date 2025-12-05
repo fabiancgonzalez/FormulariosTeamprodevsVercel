@@ -12,7 +12,7 @@
   <div class="personas-list" *ngIf="personas().length > 0">
     <h3>Personas Registradas</h3>
     <div class="persona-item" *ngFor="let persona of personas()">
-      <span>{{ persona.nombre }} {{ persona.apellido }}</span>
+      <span>{{ persona.nombre }}</span>
       <button mat-raised-button color="primary" (click)="seleccionarPersona(persona)">Editar</button>
     </div>
   </div>
@@ -23,40 +23,22 @@
     <p>Nombre *</p>
     <mat-form-field>
       <mat-label>Ingrese su nombre:</mat-label>
-      <input matInput [(ngModel)]="nombre" placeholder="nombre">
-    </mat-form-field>
-
-    <p>Apellido *</p>
-    <mat-form-field>
-      <mat-label>Ingrese su apellido:</mat-label>
-      <input matInput [(ngModel)]="apellido" placeholder="apellido">
-    </mat-form-field>
-
-    <p>Email</p>
-    <mat-form-field>
-      <mat-label>Ingrese su email:</mat-label>
-      <input matInput [(ngModel)]="email" type="email" placeholder="email@example.com">
-    </mat-form-field>
-
-    <p>Teléfono</p>
-    <mat-form-field>
-      <mat-label>Ingrese su teléfono:</mat-label>
-      <input matInput [(ngModel)]="telefono" placeholder="123456789">
+      <input matInput [value]="nombre()" (change)="nombre.set($any($event.target).value)" placeholder="nombre">
     </mat-form-field>
 
     <p>Fecha de nacimiento</p>
     <mat-form-field>
       <mat-label>Seleccione fecha:</mat-label>
-      <input matInput [matDatepicker]="picker" [(ngModel)]="fechaNacimiento">
+      <input matInput [matDatepicker]="picker" [value]="fechaNacimiento()" (dateChange)="fechaNacimiento.set($event.value)">
       <mat-hint>MM/DD/YYYY</mat-hint>
       <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
       <mat-datepicker #picker></mat-datepicker>
     </mat-form-field>
 
-    <p>Estatura</p>
+    <p>Estatura (cm)</p>
     <mat-form-field>
       <mat-label>Ingrese su estatura (cm):</mat-label>
-      <input matInput [(ngModel)]="estatura" type="number" placeholder="170">
+      <input matInput [value]="estatura()" (change)="estatura.set($any($event.target).value)" type="number" placeholder="170">
     </mat-form-field>
 
     <div class="button-row">

@@ -22,20 +22,7 @@ const personaSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  cedula: {
-    type: String,
-    unique: true,
-    sparse: true,
-    trim: true
-  },
-  direccion: {
-    type: String,
-    trim: true
-  },
-  ciudad: {
-    type: String,
-    trim: true
-  },
+ 
   createdAt: {
     type: Date,
     default: Date.now
