@@ -12,7 +12,7 @@ const mongooseOptions = {
 async function connectMongoDB() {
   try {
     // Método 1: Usando la URI directa sin encoding
-    const uri = `mongodb+srv://ceferinomonier:Fabian0453*@cluster0.igvuqqt.mongodb.net/?appName=Cluster0&retryWrites=true&w=majority`;
+    const uri = `////'
     
     console.log('Intentando conexión a MongoDB...');
     console.log('URI:', uri.replace(/:[^:@]*@/, ':****@'));
