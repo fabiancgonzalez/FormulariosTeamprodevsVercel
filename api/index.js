@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const { attachDatabasePool } = require('@vercel/functions');
 
 // Importar rutas
 const personasRoutes = require('../backend-nodejs/routes/personas');
@@ -22,21 +23,37 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Conexión a MongoDB Atlas
+// Conexión a MongoDB Atlas con pool de conexiones
 const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://Vercel-Admin-formulariomascota:wFHZOpHnFlnkR13E@formulariomascota.tqebomv.mongodb.net/?retryWrites=true&w=majority';
 
-console.log('Conectando a MongoDB...');
+let mongooseConnection = null;
 
-mongoose.connect(mongoUri, {
-  maxPoolSize: 10,
-  serverSelectionTimeoutMS: 5000,
-})
-  .then(() => {
+async function connectDB() {
+  if (mongooseConnection) {
+    return mongooseConnection;
+  }
+
+  try {
+    mongooseConnection = await mongoose.connect(mongoUri, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+    });
     console.log('✓ Conectado a MongoDB Atlas');
-  })
-  .catch(err => {
+    
+    // Usar pool de conexiones de Vercel para optimizar
+    if (mongoose.connection.getClient && typeof attachDatabasePool === 'function') {
+      attachDatabasePool(mongoose.connection.getClient());
+    }
+    
+    return mongooseConnection;
+  } catch (err) {
     console.error('✗ Error conectando a MongoDB:', err.message);
-  });
+    throw err;
+  }
+}
+
+// Inicializar conexión
+connectDB().catch(err => console.error('Error inicial de conexión:', err));
 
 // Rutas
 app.use('/api/personas', personasRoutes);
